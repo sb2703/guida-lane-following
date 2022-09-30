@@ -17,6 +17,10 @@ come illustrato in [questa pagina](https://docs.duckietown.org/daffy/opmanual_du
  3. Il file *master.launch*, con l’input “lane following”, si occupa di effettuare il *remapping* di tutti i topic ROS interessati e di includere nello stack software tutti nodi che compongono il *lane following*, anche quelli che non si trovano in *lane_following.launch*.
  4. Per effetto di *master.launch*, vengono chiamati i file di lancio di tutti i nodi che compongono lo stack software, ciascuno memorizzato nel package del nodo corrispondente.
 
+Nell'immagine seguente è mostrato come sono disposti i file sopracitati in `dt-core`.
+
+![](./img/dt-core.png)
+
 I nodi che compongono lo stack software sono memorizzati in appositi package, i quali si trovano nella directory ["packages"](https://github.com/duckietown/dt-core/tree/daffy/packages) di `dt-core`. I package principali sono i seguenti: 
 
  - **[Line Detector:](https://github.com/duckietown/dt-core/tree/daffy/packages/line_detector)** Il nodo *[LineDetectorNode](https://github.com/duckietown/dt-core/blob/daffy/packages/line_detector/src/line_detector_node.py)* effettua una correzione del colore e ritaglia l'immagine ricevuta dalla videocamera, crea una copia BGR dell'immagine, converte l'immagine nel modello [HSV](https://it.wikipedia.org/wiki/Hue_Saturation_Brightness) e poi applica l'[algoritmo di Canny](https://it.wikipedia.org/wiki/Algoritmo_di_Canny); infine va ad estrarre i segmenti di linea dall'immagine basandosi su un range di colori e sulla [trasformata di Hough](https://it.wikipedia.org/wiki/Trasformata_di_Hough).
