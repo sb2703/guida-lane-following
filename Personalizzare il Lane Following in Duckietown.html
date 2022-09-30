@@ -1,0 +1,102 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Personalizzare il Lane Following in Duckietown</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h1 id="personalizzare-il-lane-following-in-duckietown">Personalizzare il Lane Following in Duckietown</h1>
+<p>La presente guida ha l’obiettivo di descrivere come personalizzare la funzionalità di <em><strong>lane following</strong></em> in Duckietown. Dopo aver illustrato la struttura dello stack software della funzionalità in questione, verranno descritti i passaggi da seguire per apportare modifiche al codice ed eseguire la demo così modificata.</p>
+<h2 id="struttura-del-codice">Struttura del Codice</h2>
+<p><img src="./img/dt-code-structure.png" alt=""><br>
+Il software impiegato da Duckietown nei suoi duckiebot è basato sull’uso di Docker. Il codice di Duckietown è dunque costituito da container (e immagini corrispondenti) organizzati nella gerarchia sopra riportata.<br>
+Il codice che va a costituire lo stack software della funzionalità (nonché demo) <em>lane following</em> è contenuto nella immagine <code>dt-core</code>, la quale contiene tutte le funzionalità di alto livello del duckiebot. Questa immagine usa come base <code>dt-ros-commons</code>, alla base di altre importanti immagini quali <code>dt-duckiebot-interface</code> (contenente i driver per l’hardware) e <code>dt-car-interface</code> (contenente tutto il necessario per guidare il duckiebot).<br>
+Il codice sorgente di <code>dt-core</code> può essere agevolmente studiato su <strong>GitHub</strong>, partendo da <a href="https://github.com/duckietown/dt-core">qui</a>. Come accennato in precedenza, il <em>lane following</em> non è l’unica funzionalità implementata da <code>dt-core</code>. Per poter attivare il <em>lane following</em> è necessario eseguire il comando</p>
+<pre><code>dts duckiebot demo --demo_name lane_following --duckiebot_name &lt;DUCKIEBOT_NAME&gt; --package_name duckietown_demos
+</code></pre>
+<p>come illustrato in <a href="https://docs.duckietown.org/daffy/opmanual_duckiebot/out/demo_lane_following.html">questa pagina</a> della documentazione ufficiale. Questo comando è però un “wrapper”,  la cui chiamata avvia la demo in base ai seguenti passaggi:</p>
+<ol>
+<li>Attraverso l’uso di <em><a href="https://github.com/duckietown/dt-core/blob/daffy/launchers/lane_following.sh">lane_following.sh</a></em> viene eseguito il comando <code>dt-exec roslaunch --wait duckietown_demos lane_following.launch</code>.</li>
+<li>Nel file <em><a href="https://github.com/duckietown/dt-core/blob/daffy/packages/duckietown_demos/launch/lane_following.launch">lane_following.launch</a></em> vengono specificati i nodi ROS facenti parte dello stack software, ma viene anche chiamato <em><a href="https://github.com/duckietown/dt-core/blob/daffy/packages/duckietown_demos/launch/master.launch#L129">master.launch</a></em> specificando il “lane following”.</li>
+<li>Il file <em>master.launch</em>, con l’input “lane following”, si occupa di effettuare il <em>remapping</em> di tutti i topic ROS interessati e di includere nello stack software tutti nodi che compongono il <em>lane following</em>, anche quelli che non si trovano in <em>lane_following.launch</em>.</li>
+<li>Per effetto di <em>master.launch</em>, vengono chiamati i file di lancio di tutti i nodi che compongono lo stack software, ciascuno memorizzato nel package del nodo corrispondente.</li>
+</ol>
+<p>I nodi che compongono lo stack software sono memorizzati in appositi package, i quali si trovano nella directory <a href="https://github.com/duckietown/dt-core/tree/daffy/packages">“packages”</a> di <code>dt-core</code>. I package principali sono i seguenti:</p>
+<ul>
+<li><strong><a href="https://github.com/duckietown/dt-core/tree/daffy/packages/line_detector">Line Detector:</a></strong> Il nodo <em><a href="https://github.com/duckietown/dt-core/blob/daffy/packages/line_detector/src/line_detector_node.py">LineDetectorNode</a></em> effettua una correzione del colore e ritaglia l’immagine ricevuta dalla videocamera, crea una copia BGR dell’immagine, converte l’immagine nel modello <a href="https://it.wikipedia.org/wiki/Hue_Saturation_Brightness">HSV</a> e poi applica l’<a href="https://it.wikipedia.org/wiki/Algoritmo_di_Canny">algoritmo di Canny</a>; infine va ad estrarre i segmenti di linea dall’immagine basandosi su un range di colori e sulla <a href="https://it.wikipedia.org/wiki/Trasformata_di_Hough">trasformata di Hough</a>.</li>
+<li><strong><a href="https://github.com/duckietown/dt-core/tree/daffy/packages/ground_projection">Ground Projection:</a></strong> Il nodo <em><a href="https://github.com/duckietown/dt-core/blob/daffy/packages/ground_projection/src/ground_projection_node.py">GroundProjectionNode</a></em> va a proiettare i segmenti di linea individuati nell’immagine sia sul piano del terreno che nel sistema di riferimento del robot, facendo uso di una <a href="https://en.wikipedia.org/wiki/Homography_%28computer_vision%29">matrice di omografia</a>.</li>
+<li><strong><a href="https://github.com/duckietown/dt-core/tree/daffy/packages/lane_filter">Lane Filter:</a></strong> Il nodo <em><a href="https://github.com/duckietown/dt-core/blob/daffy/packages/lane_filter/src/lane_filter_node.py">LaneFilterNode</a></em> crea un filtro (del tipo <em><a href="https://calvinfeng.gitbook.io/probabilistic-robotics/basics/nonparametric-filters/01-histogram-filter">“histogram grid filter”</a></em>) il quale, ricevendo in input i segmenti calcolati da <em>LineDetectorNode</em>, restituisce una stima della posa del robot, ovvero la coppia formata da deviazione laterale e angolare dal centro della carreggiata.</li>
+<li><strong><a href="https://github.com/duckietown/dt-core/tree/daffy/packages/lane_control">Lane Control:</a></strong> Il nodo <em><a href="https://github.com/duckietown/dt-core/blob/daffy/packages/lane_control/src/lane_controller_node.py">LaneControllerNode</a></em> calcola i comandi di controllo attraverso un controllore PI con tecnologia “anti-reset windup”, il quale riceve in input l’errore nella posa relativa del robot e restituisce in output i comandi in termini di velocità lineare e velocità angolare.</li>
+</ul>
+<p>Fanno però parte dello stack software anche i seguenti package:</p>
+<ul>
+<li><strong><a href="https://github.com/duckietown/dt-core/tree/daffy/packages/anti_instagram">Anti Instagram:</a></strong> Il nodo <em><a href="https://github.com/duckietown/dt-core/blob/daffy/packages/anti_instagram/src/anti_instagram_node.py">AntiInstagramNode</a></em> fa uso di funzionalità di <em><a href="https://github.com/duckietown/dt-core/blob/daffy/packages/complete_image_pipeline/include/image_processing/anti_instagram.py">AntiInstagram</a></em>, contenuto nel package <em>Complete Image Pipeline</em>, per aiutare il nodo <em>LineDetectionNode</em> nell’esecuzione dei suoi compiti.</li>
+<li><strong><a href="https://github.com/duckietown/dt-core/tree/daffy/packages/complete_image_pipeline">Complete Image Pipeline:</a></strong> Contiene numerose funzionalità, come quelle dell’<em>AntiInstagram</em> sopracitato oppure la funzionalità di calibrazione estrinseca, che genera la matrice di omografia impiegata da <em>GroundProjectionNode</em>.</li>
+<li><strong><a href="https://github.com/duckietown/dt-core/tree/daffy/packages/fsm">FSM:</a></strong> Il nodo <em><a href="https://github.com/duckietown/dt-core/blob/daffy/packages/fsm/src/fsm_node.py">FSMNode</a></em> realizza una macchina a stati finiti.</li>
+<li><strong><a href="https://github.com/duckietown/dt-core/tree/daffy/packages/visualization_tools">Visualization Tools:</a></strong> Fornisce strumenti di visualizzazione quali i nodi <em><a href="https://github.com/duckietown/dt-core/blob/daffy/packages/visualization_tools/src/lane_pose_visualizer_node.py">LanePoseVisualizer</a></em> e <em><a href="https://github.com/duckietown/dt-core/blob/daffy/packages/visualization_tools/src/line_segment_visualizer_node.py">LineSegmentVisualizer</a></em>.</li>
+</ul>
+<p>Nella immagine seguente viene mostrato come i nodi facenti parte lo stack software del <em>lane following</em> (in arancione) interagiscono (attraverso i topic ROS) con gli altri nodi attivi nel duckiebot (in azzurro).<br>
+<img src="./img/nodes-scheme.png" alt=""></p>
+<h2 id="modificare-lo-stack-software">Modificare lo Stack Software</h2>
+<p>Poniamo ora come obiettivo quello di descrivere una procedura per apportare modifiche allo stack software della demo <em>lane following</em>. L’idea di base è quella di modificare uno o più package che compongono la pipeline della demo e poi integrare i package modificati nello stack software, così da poter avviare la demo modificata con lo stesso comando impiegato per avviare la demo “originale”. Di seguito si suppone di lavorare con un duckiebot di tipo DB18: l’architettura di base è dunque <em>arm32v7</em>, e il codice sorgente appartiene al ramo <em>daffy</em> (quello implicitamente considerato in precedenza).</p>
+<h3 id="avviare-la-demo">Avviare la Demo</h3>
+<p>Già in precedenza è stato illustrato che per poter avviare la demo <em>lane following</em> è necessario eseguire il comando</p>
+<pre><code>dts duckiebot demo --demo_name lane_following --duckiebot_name &lt;DUCKIEBOT_NAME&gt; --package_name duckietown_demos
+</code></pre>
+<p>che si rivela essere un “wrapper” per il comando</p>
+<pre><code>roslaunch duckietown_demos lane_following.launch veh:=&lt;DUCKIEBOT_NAME&gt; robot_type:=duckiebot robot_configuration:=DB18
+</code></pre>
+<p>Prima di avviare la demo è necessario assicurarsi che i container <code>dt-duckiebot-interface</code> e <code>dt-car-interface</code> siano in esecuzione; questo può essere fatto da terminale o attraverso Portainer. Fatto questo, è possibile eseguire il comando mostrato sopra: se la demo non è mai stata eseguita, questo porterà il duckiebot a scaricare l’immagine <code>duckietown/dt-core:daffy-arm32v7</code>. Questa non solo è l’immagine della demo “standard” del <em>lane following</em>, ma è anche l’immagine utilizzata come base per la nostra versione modificata.</p>
+<h3 id="personalizzare-la-demo">Personalizzare la Demo</h3>
+<p>Per poter operare sullo stack software è necessario non solo l’interfaccia a riga di comando del proprio PC, ma anche di quella del proprio duckiebot. Quest’ultima può essere acceduta attraverso SSH con il comando</p>
+<pre><code>ssh duckie@&lt;DUCKIEBOT_NAME&gt;.local
+</code></pre>
+<p>eseguito dal proprio PC; è normalmente richiesta una password - di default <em>quackquack</em>.</p>
+<p>Si può ora procedere con il modificare la demo <em>lane following</em> attraverso i passaggi seguenti:</p>
+<ol>
+<li>
+<p>All’interno del duckiebot, ri-taggare l’immagine <code>duckietown/dt-core:daffy-arm32v7</code> con il comando <code>docker tag duckietown/dt-core:daffy-arm32v7 duckietown/dt-core:backup</code> ed eliminare il vecchio tag con il comando <code>docker rmi duckietown/dt-core:daffy-arm32v7</code>.</p>
+</li>
+<li>
+<p>All’interno del proprio PC, clonare la directory <code>dt-core</code> da GitHub con il comando <code>git clone https://github.com/duckietown/dt-core</code> (di default nel ramo <em>daffy</em>).</p>
+</li>
+<li>
+<p>Copiare dalla directory <code>dt-core/packages/</code> i package che si intende modificare e apportare le modifiche desiderate.</p>
+</li>
+<li>
+<p>Spostare tutti i package modificati in una cartella &lt;pkgs_dir&gt;. Si sconsiglia di utilizzare il nome “packages”, poiché potrebbe creare conflitti.</p>
+</li>
+<li>
+<p>Copiare nel duckiebot la cartella &lt;pkgs_dir&gt; utilizzando il comando <code>scp -r &lt;pkgs_dir&gt;/ duckie@lugia.local:/home/duckie</code>. Si suppone di essere nella directory in cui si trova &lt;pkgs_dir&gt;, altrimenti sarà necessario specificare il percorso (relativo o assoluto).</p>
+</li>
+<li>
+<p>Creare un Dockerfile come segue:</p>
+<p><code>FROM duckietown/dt-core:backup</code><br>
+<code>WORKDIR ${CATKIN_WS_DIR}/src/dt-core</code><br>
+<code>ARG PACKAGES</code><br>
+<code>COPY ./${PACKAGES} ./${PACKAGES}</code><br>
+<code>RUN \cp -rf ./${PACKAGES}/* ./packages</code><br>
+<code>RUN rm -r ./${PACKAGES}</code></p>
+</li>
+<li>
+<p>Supponendo di aver creato il Dockerfile nel proprio PC, copiare nel duckiebot il Dockerfile utilizzando il comando <code>scp Dockerfile duckie@lugia.local:/home/duckie</code>. Si suppone di essere nella directory in cui si trova tale file, altrimenti sarà necessario specificare il percorso (relativo o assoluto).</p>
+</li>
+<li>
+<p>Nel duckiebot, spostarsi nella directory in cui sono memorizzati &lt;pkgs_dir&gt; e il Dockerfile; come risultato dei comandi precedenti la directory è <code>/home/duckie</code>.</p>
+</li>
+<li>
+<p>Eseguire il comando <code>docker build -t duckietown/dt-core:daffy-arm32v7 --build-arg PACKAGES=&lt;pkgs_dir&gt; .</code> nel duckiebot.</p>
+</li>
+</ol>
+<p>Una volta terminati questi passi, si potrà avviare la demo come di norma con il comando</p>
+<pre><code>dts duckiebot demo --demo_name lane_following --duckiebot_name &lt;DUCKIEBOT_NAME&gt; --package_name duckietown_demos
+</code></pre>
+<p>Il comando avvierà la versione modificata del <em>lane following</em>, basandosi essa sulla <em>nostra</em> versione dell’immagine <code>duckietown/dt-core:daffy-arm32v7</code>.</p>
+</div>
+</body>
+
+</html>
