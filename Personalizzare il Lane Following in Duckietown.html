@@ -73,7 +73,7 @@ Il codice sorgente di <code>dt-core</code> può essere agevolmente studiato su <
 <p>Spostare tutti i package modificati in una cartella &lt;pkgs_dir&gt;. Si sconsiglia di utilizzare il nome “packages”, poiché potrebbe creare conflitti.</p>
 </li>
 <li>
-<p>Copiare nel duckiebot la cartella &lt;pkgs_dir&gt; utilizzando il comando <code>scp -r &lt;pkgs_dir&gt;/ duckie@lugia.local:/home/duckie</code>. Si suppone di essere nella directory in cui si trova &lt;pkgs_dir&gt;, altrimenti sarà necessario specificare il percorso (relativo o assoluto).</p>
+<p>Copiare nel duckiebot la cartella &lt;pkgs_dir&gt; utilizzando il comando <code>scp -r &lt;pkgs_dir&gt;/ duckie@&lt;DUCKIEBOT_NAME&gt;.local:/home/duckie</code>. Si suppone di essere nella directory in cui si trova &lt;pkgs_dir&gt;, altrimenti sarà necessario specificare il percorso (relativo o assoluto).</p>
 </li>
 <li>
 <p>Creare un Dockerfile come segue:</p>
@@ -85,7 +85,7 @@ Il codice sorgente di <code>dt-core</code> può essere agevolmente studiato su <
 <code>RUN rm -r ./${PACKAGES}</code></p>
 </li>
 <li>
-<p>Supponendo di aver creato il Dockerfile nel proprio PC, copiare nel duckiebot il Dockerfile utilizzando il comando <code>scp Dockerfile duckie@lugia.local:/home/duckie</code>. Si suppone di essere nella directory in cui si trova tale file, altrimenti sarà necessario specificare il percorso (relativo o assoluto).</p>
+<p>Supponendo di aver creato il Dockerfile nel proprio PC, copiare nel duckiebot il Dockerfile utilizzando il comando <code>scp Dockerfile duckie@&lt;DUCKIEBOT_NAME&gt;.local:/home/duckie</code>. Si suppone di essere nella directory in cui si trova tale file, altrimenti sarà necessario specificare il percorso (relativo o assoluto).</p>
 </li>
 <li>
 <p>Nel duckiebot, spostarsi nella directory in cui sono memorizzati &lt;pkgs_dir&gt; e il Dockerfile; come risultato dei comandi precedenti la directory è <code>/home/duckie</code>.</p>
