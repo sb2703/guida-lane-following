@@ -65,7 +65,7 @@ Si può ora procedere con il modificare la demo *lane following* attraverso i pa
  2. All'interno del proprio PC, clonare la directory `dt-core` da GitHub con il comando `git clone https://github.com/duckietown/dt-core` (di default nel ramo *daffy*).
  3. Copiare dalla directory `dt-core/packages/` i package che si intende modificare e apportare le modifiche desiderate.
  4. Spostare tutti i package modificati in una cartella <pkgs_dir>. Si sconsiglia di utilizzare il nome "packages", poiché potrebbe creare conflitti.
- 5. Copiare nel duckiebot la cartella <pkgs_dir> utilizzando il comando `scp -r <pkgs_dir>/ duckie@lugia.local:/home/duckie`. Si suppone di essere nella directory in cui si trova <pkgs_dir>, altrimenti sarà necessario specificare il percorso (relativo o assoluto).
+ 5. Copiare nel duckiebot la cartella <pkgs_dir> utilizzando il comando `scp -r <pkgs_dir>/ duckie@<DUCKIEBOT_NAME>.local:/home/duckie`. Si suppone di essere nella directory in cui si trova <pkgs_dir>, altrimenti sarà necessario specificare il percorso (relativo o assoluto).
  6. Creare un Dockerfile come segue:
 
     `FROM duckietown/dt-core:backup`
@@ -75,7 +75,7 @@ Si può ora procedere con il modificare la demo *lane following* attraverso i pa
    `RUN \cp -rf ./${PACKAGES}/* ./packages`
    `RUN rm -r ./${PACKAGES}`
 
- 7. Supponendo di aver creato il Dockerfile nel proprio PC, copiare nel duckiebot il Dockerfile utilizzando il comando `scp Dockerfile duckie@lugia.local:/home/duckie`. Si suppone di essere nella directory in cui si trova tale file, altrimenti sarà necessario specificare il percorso (relativo o assoluto).
+ 7. Supponendo di aver creato il Dockerfile nel proprio PC, copiare nel duckiebot il Dockerfile utilizzando il comando `scp Dockerfile duckie@<DUCKIEBOT_NAME>.local:/home/duckie`. Si suppone di essere nella directory in cui si trova tale file, altrimenti sarà necessario specificare il percorso (relativo o assoluto).
  8. Nel duckiebot, spostarsi nella directory in cui sono memorizzati <pkgs_dir> e il Dockerfile; come risultato dei comandi precedenti la directory è `/home/duckie`.
  9. Eseguire il comando `docker build -t duckietown/dt-core:daffy-arm32v7 --build-arg PACKAGES=<pkgs_dir> .` nel duckiebot.
 
