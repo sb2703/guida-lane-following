@@ -4,6 +4,7 @@ La presente guida ha l'obiettivo di descrivere come personalizzare la funzionali
 
 ## Struttura del Codice 
 ![](./img/dt-code-structure.png)
+
 Il software impiegato da Duckietown nei suoi duckiebot è basato sull'uso di Docker. Il codice di Duckietown è dunque costituito da container (e immagini corrispondenti) organizzati nella gerarchia sopra riportata.
 Il codice che va a costituire lo stack software della funzionalità (nonché demo) *lane following* è contenuto nella immagine `dt-core`, la quale contiene tutte le funzionalità di alto livello del duckiebot. Questa immagine usa come base `dt-ros-commons`, alla base di altre importanti immagini quali `dt-duckiebot-interface` (contenente i driver per l'hardware) e `dt-car-interface` (contenente tutto il necessario per guidare il duckiebot).
 Il codice sorgente di `dt-core` può essere agevolmente studiato su **GitHub**, partendo da [qui](https://github.com/duckietown/dt-core). Come accennato in precedenza, il *lane following* non è l'unica funzionalità implementata da `dt-core`. Per poter attivare il *lane following* è necessario eseguire il comando
